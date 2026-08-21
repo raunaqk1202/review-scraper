@@ -1,0 +1,102 @@
+import os
+# pyrefly: ignore [missing-import]
+from fastapi import APIRouter, Depends, HTTPException
+from dotenv import load_dotenv
+load_dotenv()
+
+from app.api.deps import get_chroma_client
+from app.schemas.research import ResearchQueryRequest, ResearchQueryResponse
+from app.schemas.opportunity import AISignalResponse
+
+# pyrefly: ignore [missing-import]
+import instructor
+from groq import AsyncGroq
+
+router = APIRouter()
+
+groq_client = AsyncGroq(api_key=os.environ.get("GROQ_API_KEY"))
+client = instructor.from_groq(groq_client, mode=instructor.Mode.JSON)
+MODEL_NAME = "openai/gpt-oss-120b"
+
+@router.post("/ask", response_model=ResearchQueryResponse)
+async def ask_research_question(
+    request: ResearchQueryRequest,
+    chroma_client = Depends(get_chroma_client)
+):
+    """
+    RAG Endpoint: Uses ChromaDB to find relevant behavioral signals 
+    and Groq LLM to synthesize an answer.
+    """
+    collection = chroma_client.get_collection(name="behavioral_signals")
+    
+    # 1. Retrieve the top 5 most relevant behavioral signals
+    results = collection.query(
+        query_texts=[request.query],
+        n_results=5
+    )
+    
+    if not results['documents'] or not results['documents'][0]:
+        return ResearchQueryResponse(
+            query=request.query,
+            answer="No relevant behavioral signals found in the database for this query.",
+            sources=[]
+        )
+        
+    retrieved_docs = results['documents'][0]
+    retrieved_metadatas = results['metadatas'][0]
+    retrieved_ids = results['ids'][0]
+    
+    # Format the context for the LLM
+    context_blocks = []
+    sources = []
+    
+    for i in range(len(retrieved_docs)):
+        doc_text = retrieved_docs[i]
+        meta = retrieved_metadatas[i]
+        signal_id = retrieved_ids[i]
+        
+        context_blocks.append(f"--- Signal ID {signal_id} ---\n{doc_text}")
+        
+        sources.append(AISignalResponse(
+            id=signal_id,
+            journey_stage=meta.get("journey_stage"),
+            signal_type=meta.get("signal_type"),
+            confidence_score=meta.get("confidence_score")
+        ))
+        
+    full_context = "\n\n".join(context_blocks)
+    
+    # 2. Generate the Answer using Groq
+    system_prompt = (
+        "You are a UX/Consumer Psychology Researcher. Answer the user's question based ONLY "
+        "on the retrieved user feedback signals provided below. Do not hallucinate external information. "
+        "Quote specific users where relevant. "
+        "If the user's question is random, gibberish, or completely unrelated to UX, consumer psychology, or the retrieved signals, "
+        "politely inform them that you didn't understand and ask them to try asking something relatable to the data."
+    )
+    
+    user_prompt = f"Question: {request.query}\n\nRetrieved Signals:\n{full_context}"
+    
+    try:
+        from pydantic import BaseModel
+        class LLMAnswer(BaseModel):
+            answer: str
+            
+        ai_response = await client.chat.completions.create(
+            model=MODEL_NAME,
+            response_model=LLMAnswer,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            temperature=0.2
+        )
+        answer_text = ai_response.answer
+    except Exception as e:
+        answer_text = f"Error generating answer: {str(e)}"
+        
+    return ResearchQueryResponse(
+        query=request.query,
+        answer=answer_text,
+        sources=sources
+    )

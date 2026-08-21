@@ -1,0 +1,644 @@
+components:
+  schemas:
+    AISignalResponse:
+      properties:
+        confidence_score:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Confidence Score
+        evidence_quote:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Evidence Quote
+        id:
+          title: Id
+          type: string
+        journey_stage:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Journey Stage
+        signal_type:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Signal Type
+        summary:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Summary
+      required:
+      - id
+      title: AISignalResponse
+      type: object
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          title: Detail
+          type: array
+      title: HTTPValidationError
+      type: object
+    IngestRequest:
+      properties:
+        kwargs:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          default: {}
+          title: Kwargs
+        limit:
+          default: 50
+          title: Limit
+          type: integer
+        platform:
+          title: Platform
+          type: string
+      required:
+      - platform
+      title: IngestRequest
+      type: object
+    OpportunityResponse:
+      properties:
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+        id:
+          title: Id
+          type: string
+        score:
+          anyOf:
+          - $ref: '#/components/schemas/OpportunityScoreResponse'
+          - type: 'null'
+        supporting_conversations:
+          title: Supporting Conversations
+          type: integer
+        title:
+          title: Title
+          type: string
+      required:
+      - id
+      - title
+      - supporting_conversations
+      title: OpportunityResponse
+      type: object
+    OpportunityScoreResponse:
+      properties:
+        business_impact:
+          title: Business Impact
+          type: number
+        composite_score:
+          title: Composite Score
+          type: number
+        evidence_strength:
+          title: Evidence Strength
+          type: number
+        reach:
+          title: Reach
+          type: number
+        severity:
+          title: Severity
+          type: number
+      required:
+      - reach
+      - severity
+      - business_impact
+      - evidence_strength
+      - composite_score
+      title: OpportunityScoreResponse
+      type: object
+    PipelineRunRequest:
+      properties:
+        stages:
+          anyOf:
+          - items:
+              type: integer
+            type: array
+          - type: 'null'
+          title: Stages
+      title: PipelineRunRequest
+      type: object
+    ResearchQueryRequest:
+      properties:
+        query:
+          title: Query
+          type: string
+      required:
+      - query
+      title: ResearchQueryRequest
+      type: object
+    ResearchQueryResponse:
+      properties:
+        answer:
+          title: Answer
+          type: string
+        query:
+          title: Query
+          type: string
+        sources:
+          items:
+            $ref: '#/components/schemas/AISignalResponse'
+          title: Sources
+          type: array
+      required:
+      - query
+      - answer
+      - sources
+      title: ResearchQueryResponse
+      type: object
+    SourceResponse:
+      properties:
+        description:
+          title: Description
+          type: string
+        id:
+          title: Id
+          type: string
+        last_fetched:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Last Fetched
+        platform:
+          title: Platform
+          type: string
+        source_type:
+          title: Source Type
+          type: string
+      required:
+      - id
+      - platform
+      - source_type
+      - description
+      title: SourceResponse
+      type: object
+    ValidationError:
+      properties:
+        ctx:
+          title: Context
+          type: object
+        input:
+          title: Input
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          title: Location
+          type: array
+        msg:
+          title: Message
+          type: string
+        type:
+          title: Error Type
+          type: string
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+      type: object
+info:
+  description: Backend API for the AI-Powered Fashion Purchase Discovery Engine
+  title: Discovery Intelligence Engine API
+  version: 1.0.0
+openapi: 3.1.0
+paths:
+  /api/v1/evidence/cluster/{id}:
+    get:
+      description: Cluster detail + member list.
+      operationId: get_cluster_api_v1_evidence_cluster__id__get
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          title: Id
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                title: Response Get Cluster Api V1 Evidence Cluster  Id  Get
+                type: object
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Get Cluster
+      tags:
+      - evidence
+  /api/v1/evidence/drilldown:
+    get:
+      description: 'Full chain: Opportunity -> Pattern -> Cluster -> Feedback -> Source.'
+      operationId: get_opportunity_drilldown_api_v1_evidence_drilldown_get
+      parameters:
+      - in: query
+        name: opportunity_id
+        required: true
+        schema:
+          title: Opportunity Id
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                items:
+                  additionalProperties: true
+                  type: object
+                title: Response Get Opportunity Drilldown Api V1 Evidence Drilldown
+                  Get
+                type: array
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Get Opportunity Drilldown
+      tags:
+      - evidence
+  /api/v1/evidence/feedback/{id}:
+    get:
+      description: Original feedback with source metadata.
+      operationId: get_feedback_api_v1_evidence_feedback__id__get
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          title: Id
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                title: Response Get Feedback Api V1 Evidence Feedback  Id  Get
+                type: object
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Get Feedback
+      tags:
+      - evidence
+  /api/v1/evidence/pattern/{id}:
+    get:
+      description: Pattern detail with supporting evidence.
+      operationId: get_pattern_api_v1_evidence_pattern__id__get
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          title: Id
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                title: Response Get Pattern Api V1 Evidence Pattern  Id  Get
+                type: object
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Get Pattern
+      tags:
+      - evidence
+  /api/v1/ingest/:
+    post:
+      description: Trigger data ingestion from a specified platform.
+      operationId: trigger_ingestion_api_v1_ingest__post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IngestRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                title: Response Trigger Ingestion Api V1 Ingest  Post
+                type: object
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Trigger Ingestion
+      tags:
+      - ingestion
+  /api/v1/ingest/sources:
+    get:
+      description: List configured data sources.
+      operationId: list_sources_api_v1_ingest_sources_get
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/SourceResponse'
+                title: Response List Sources Api V1 Ingest Sources Get
+                type: array
+          description: Successful Response
+      summary: List Sources
+      tags:
+      - ingestion
+  /api/v1/ingest/stats:
+    get:
+      description: Get statistics about ingested data.
+      operationId: ingest_stats_api_v1_ingest_stats_get
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                title: Response Ingest Stats Api V1 Ingest Stats Get
+                type: object
+          description: Successful Response
+      summary: Ingest Stats
+      tags:
+      - ingestion
+  /api/v1/opportunities:
+    get:
+      description: Fetch all calculated opportunities, ordered by ROI composite score.
+      operationId: list_opportunities_api_v1_opportunities_get
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/OpportunityResponse'
+                title: Response List Opportunities Api V1 Opportunities Get
+                type: array
+          description: Successful Response
+      summary: List Opportunities
+      tags:
+      - opportunities
+  /api/v1/opportunities/score/weights:
+    put:
+      description: Update scoring weights -> re-calculate composite scores.
+      operationId: update_score_weights_api_v1_opportunities_score_weights_put
+      requestBody:
+        content:
+          application/json:
+            schema:
+              additionalProperties:
+                type: number
+              title: Weights
+              type: object
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                title: Response Update Score Weights Api V1 Opportunities Score Weights
+                  Put
+                type: object
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Update Score Weights
+      tags:
+      - opportunities
+  /api/v1/opportunities/{id}:
+    get:
+      description: Full opportunity detail.
+      operationId: get_opportunity_api_v1_opportunities__id__get
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          title: Id
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                title: Response Get Opportunity Api V1 Opportunities  Id  Get
+                type: object
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Get Opportunity
+      tags:
+      - opportunities
+  /api/v1/opportunities/{id}/evidence:
+    get:
+      description: 'Drill-down: linked patterns, clusters, feedback items.'
+      operationId: get_opportunity_evidence_api_v1_opportunities__id__evidence_get
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          title: Id
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                items:
+                  additionalProperties: true
+                  type: object
+                title: Response Get Opportunity Evidence Api V1 Opportunities  Id  Evidence
+                  Get
+                type: array
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Get Opportunity Evidence
+      tags:
+      - opportunities
+  /api/v1/pipeline/run:
+    post:
+      description: Trigger the AI pipeline stages.
+      operationId: trigger_pipeline_api_v1_pipeline_run_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PipelineRunRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                title: Response Trigger Pipeline Api V1 Pipeline Run Post
+                type: object
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Trigger Pipeline
+      tags:
+      - pipeline
+  /api/v1/pipeline/status:
+    get:
+      description: Get the status of pipeline runs.
+      operationId: get_pipeline_status_api_v1_pipeline_status_get
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                title: Response Get Pipeline Status Api V1 Pipeline Status Get
+                type: object
+          description: Successful Response
+      summary: Get Pipeline Status
+      tags:
+      - pipeline
+  /api/v1/research/ask:
+    post:
+      description: "RAG Endpoint: Uses ChromaDB to find relevant behavioral signals\
+        \ \nand Groq LLM to synthesize an answer."
+      operationId: ask_research_question_api_v1_research_ask_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResearchQueryRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResearchQueryResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Ask Research Question
+      tags:
+      - research
+  /api/v1/segments/compare:
+    get:
+      description: Compare barrier/opportunity distributions across segments.
+      operationId: compare_segments_api_v1_segments_compare_get
+      parameters:
+      - description: Dimension to compare, e.g. user_type
+        in: query
+        name: dimension
+        required: true
+        schema:
+          description: Dimension to compare, e.g. user_type
+          title: Dimension
+          type: string
+      - description: Values to compare
+        in: query
+        name: values
+        required: true
+        schema:
+          description: Values to compare
+          items:
+            type: string
+          title: Values
+          type: array
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                title: Response Compare Segments Api V1 Segments Compare Get
+                type: object
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Compare Segments
+      tags:
+      - segments
+  /api/v1/trends/:
+    get:
+      description: Trend analysis for patterns.
+      operationId: get_trends_api_v1_trends__get
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                items:
+                  additionalProperties: true
+                  type: object
+                title: Response Get Trends Api V1 Trends  Get
+                type: array
+          description: Successful Response
+      summary: Get Trends
+      tags:
+      - trends
+  /health:
+    get:
+      operationId: health_check_health_get
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: Successful Response
+      summary: Health Check
+

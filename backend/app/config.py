@@ -1,0 +1,38 @@
+from typing import List, Union
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import AnyHttpUrl, field_validator
+
+class Settings(BaseSettings):
+    APP_ENV: str = "development"
+    LOG_LEVEL: str = "INFO"
+    
+    # CORS — accepts a comma-separated string from env or a list
+    CORS_ORIGINS: List[str] = ["http://localhost:3000"]
+    
+    @field_validator("CORS_ORIGINS", mode="before")
+    def assemble_cors_origins(cls, v: Union[str, List[str]]) -> Union[List[str], str]:
+        if isinstance(v, str) and not v.startswith("["):
+            return [i.strip() for i in v.split(",")]
+        elif isinstance(v, (list, str)):
+            return v
+        raise ValueError(v)
+    
+    # Database — defaults to local SQLite; Railway sets DATABASE_URL to PostgreSQL
+    DATABASE_URL: str = "sqlite+aiosqlite:///./data/discovery_engine.db"
+    CHROMADB_PATH: str = "./data/chroma"
+    
+    # Groq API
+    GROQ_API_KEY: str = ""
+    GROQ_MODEL: str = "llama-3.1-70b-versatile"
+    GROQ_EMBEDDING_MODEL: str = "all-MiniLM-L6-v2"
+    GROQ_MAX_CONCURRENT: int = 10
+    GROQ_TIMEOUT: int = 30
+    
+    # Pipeline Settings
+    PIPELINE_BATCH_SIZE: int = 50
+    PIPELINE_MIN_CLUSTER_SIZE: int = 3
+    PIPELINE_MIN_PATTERN_OCCURRENCES: int = 3
+
+    model_config = SettingsConfigDict(env_file="../.env", env_file_encoding="utf-8", extra="ignore")
+
+settings = Settings()
