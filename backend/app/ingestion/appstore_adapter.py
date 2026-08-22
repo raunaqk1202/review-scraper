@@ -1,10 +1,11 @@
 from typing import List, Dict, Any
 from datetime import datetime
-# pyrefly: ignore [missing-import]
-from app_store_scraper import AppStore
+import logging
 from app.ingestion.base_adapter import SourceAdapter
 from app.ingestion.normalizer import Normalizer
 from app.models.enums import SourcePlatform
+
+logger = logging.getLogger(__name__)
 
 class AppStoreAdapter(SourceAdapter):
     def __init__(self, app_name: str = "myntra-fashion-shopping-app", app_id: int = 907394059, country: str = "in"):
@@ -17,6 +18,11 @@ class AppStoreAdapter(SourceAdapter):
         return SourcePlatform.APP_STORE.value
 
     async def fetch(self, limit: int = 100, **kwargs) -> List[Dict[str, Any]]:
+        try:
+            from app_store_scraper import AppStore
+        except ImportError:
+            logger.error("app-store-scraper is not installed. Install it with: pip install app-store-scraper==0.3.5 --no-deps")
+            raise RuntimeError("app-store-scraper package is not installed")
         myntra = AppStore(country=self.country, app_name=self.app_name, app_id=self.app_id)
         myntra.review(how_many=limit)
         return myntra.reviews
@@ -42,3 +48,4 @@ class AppStoreAdapter(SourceAdapter):
                 "content_hash": Normalizer.generate_content_hash(text, self.platform_name, date_str),
             })
         return normalized
+
