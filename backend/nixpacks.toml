@@ -1,2 +1,6 @@
+[variables]
+NIXPACKS_PATH = "/usr/local/bin:/usr/bin:/bin"
+PATH = "/opt/venv/bin:$NIXPACKS_PATH"
+
 [phases.install]
 cmds = ["python -m venv --copies /opt/venv && . /opt/venv/bin/activate && pip install --upgrade pip && pip install -r requirements.txt --use-deprecated=legacy-resolver"]
