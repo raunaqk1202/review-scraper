@@ -1,7 +1,6 @@
 import os
 from typing import AsyncGenerator
 from sqlalchemy.ext.asyncio import AsyncSession
-import chromadb
 
 from app.db.session import AsyncSessionLocal
 
@@ -17,5 +16,6 @@ _chroma_client = None
 def get_chroma_client():
     global _chroma_client
     if _chroma_client is None:
+        import chromadb
         _chroma_client = chromadb.PersistentClient(path=CHROMA_DB_DIR)
     return _chroma_client

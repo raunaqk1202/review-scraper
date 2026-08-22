@@ -9,14 +9,13 @@ from app.models.feedback import FeedbackItem
 from app.models.clusters import Cluster, ClusterMembership
 
 # Use sklearn's HDBSCAN (available in 1.3+) and sentence-transformers
-from sklearn.cluster import HDBSCAN
-from sentence_transformers import SentenceTransformer
+# Imports are lazy-loaded to save memory during app startup
 
 class Stage3Clustering(PipelineStage):
     def __init__(self):
         super().__init__()
-        # Load the BGE model as requested
-        self.model = SentenceTransformer("BAAI/bge-small-en-v1.5")
+        # Defer loading the model until process() is called
+        self.model = None
         
     @property
     def stage_name(self) -> str:
@@ -49,12 +48,17 @@ class Stage3Clustering(PipelineStage):
             "noise_items": 0
         }
         
+        if self.model is None:
+            from sentence_transformers import SentenceTransformer
+            self.model = SentenceTransformer("BAAI/bge-small-en-v1.5")
+            
         # 1. Generate embeddings
         texts = [item.cleaned_text for item in items]
         embeddings = self.model.encode(texts)
         
         # 2. Cluster using HDBSCAN
         # min_cluster_size=3 as per architecture
+        from sklearn.cluster import HDBSCAN
         clusterer = HDBSCAN(min_cluster_size=3, metric='euclidean')
         labels = clusterer.fit_predict(embeddings)
         
