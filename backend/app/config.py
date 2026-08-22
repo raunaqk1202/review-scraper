@@ -7,12 +7,13 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
     
     # CORS — accepts a comma-separated string from env or a list
-    CORS_ORIGINS: List[str] = ["http://localhost:3000"]
+    CORS_ORIGINS: Union[List[str], str] = ["http://localhost:3000"]
     
     @field_validator("CORS_ORIGINS", mode="before")
+    @classmethod
     def assemble_cors_origins(cls, v: Union[str, List[str]]) -> Union[List[str], str]:
         if isinstance(v, str) and not v.startswith("["):
-            return [i.strip() for i in v.split(",")]
+            return [i.strip() for i in v.split(",") if i.strip()]
         elif isinstance(v, (list, str)):
             return v
         raise ValueError(v)
