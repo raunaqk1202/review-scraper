@@ -33,25 +33,22 @@ export default function OpportunityGrid() {
   }
 
   const sortedOpportunities = [...opportunities].sort((a, b) => b.supporting_conversations - a.supporting_conversations);
-  const total = sortedOpportunities.length;
-
-  const getColorClass = (index: number) => {
-    if (total === 0) return "bg-surface-container/40 border-outline-variant/30 text-on-surface";
-    if (index < total / 3) return "bg-emerald-500 border-emerald-400 text-white shadow-[0_0_15px_rgba(16,185,129,0.2)]";
-    if (index < (2 * total) / 3) return "bg-amber-500 border-amber-400 text-white shadow-[0_0_15px_rgba(245,158,11,0.2)]";
-    return "bg-rose-500 border-rose-400 text-white shadow-[0_0_15px_rgba(244,63,94,0.2)]";
-  };
+  const totalConversations = sortedOpportunities.reduce((sum, opp) => sum + opp.supporting_conversations, 0);
 
   return (
     <div className="flex flex-col gap-4 pb-xl">
       {sortedOpportunities.map((opp, index) => {
+        const percentage = totalConversations > 0 ? Math.round((opp.supporting_conversations / totalConversations) * 100) : 0;
         return (
-          <div key={opp.id} className={`border rounded-lg p-0 overflow-hidden flex flex-col ${getColorClass(index)}`}>
+          <div key={opp.id} className="glass-card rounded-lg p-0 overflow-hidden flex flex-col text-on-surface">
             {/* Top row with title only */}
             <div className="flex items-center justify-between p-4 border-b border-white/20 bg-black/20">
               <h4 className="font-headline-sm text-headline-sm font-semibold flex-grow">
                 {opp.title}
               </h4>
+              <div className="text-body-sm font-medium text-on-surface-variant bg-white/10 px-2 py-1 rounded ml-4 whitespace-nowrap">
+                {percentage}%
+              </div>
             </div>
             
             {/* Description / Sub-item row */}

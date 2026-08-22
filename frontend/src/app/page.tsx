@@ -24,12 +24,7 @@ export default function Home() {
         </h3>
       </div>
       <div className="flex flex-col gap-1 mb-md text-body-sm text-on-surface-variant">
-        <p>Colors indicate the volume of users facing the issue based on the reviews across different platforms:</p>
-        <div className="flex gap-4 mt-1">
-          <div className="flex items-center gap-1" title="High volume of affected users - Primary focus areas"><div className="w-3 h-3 rounded-full bg-emerald-500"></div> High</div>
-          <div className="flex items-center gap-1" title="Medium volume of affected users - Secondary focus areas"><div className="w-3 h-3 rounded-full bg-amber-500"></div> Medium</div>
-          <div className="flex items-center gap-1" title="Low volume of affected users - Emerging or niche issues"><div className="w-3 h-3 rounded-full bg-rose-500"></div> Low</div>
-        </div>
+        <p>The percentage represents the proportion of reviews corresponding to each opportunity relative to the total number of classified reviews.</p>
       </div>
       <OpportunityGrid />
     </main>
