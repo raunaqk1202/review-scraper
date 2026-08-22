@@ -8,7 +8,6 @@ annotated-types==0.7.0
 anyio==4.12.1
 apify_client==1.12.2
 apify_shared==1.5.0
-app-store-scraper==0.3.5
 async-timeout==5.0.1
 asyncpg==0.31.0
 attrs==26.1.0
