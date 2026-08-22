@@ -27,7 +27,11 @@ async def ask_research_question(
     RAG Endpoint: Uses ChromaDB to find relevant behavioral signals 
     and Groq LLM to synthesize an answer.
     """
-    collection = chroma_client.get_collection(name="behavioral_signals")
+    # Safely get or create the collection
+    collection = chroma_client.get_or_create_collection(
+        name="behavioral_signals",
+        metadata={"hnsw:space": "cosine"}
+    )
     
     # 1. Retrieve the top 5 most relevant behavioral signals
     results = collection.query(
@@ -35,34 +39,46 @@ async def ask_research_question(
         n_results=5
     )
     
-    if not results['documents'] or not results['documents'][0]:
-        return ResearchQueryResponse(
-            query=request.query,
-            answer="No relevant behavioral signals found in the database for this query.",
-            sources=[]
-        )
-        
-    retrieved_docs = results['documents'][0]
-    retrieved_metadatas = results['metadatas'][0]
-    retrieved_ids = results['ids'][0]
-    
-    # Format the context for the LLM
     context_blocks = []
     sources = []
     
-    for i in range(len(retrieved_docs)):
-        doc_text = retrieved_docs[i]
-        meta = retrieved_metadatas[i]
-        signal_id = retrieved_ids[i]
+    if not results.get('documents') or not results['documents'] or not results['documents'][0]:
+        # Fallback: if Chroma is empty (e.g., pipeline hasn't run yet), get recent raw feedback items from Postgres
+        from app.db.session import AsyncSessionLocal
+        from app.models.feedback import FeedbackItem
+        from sqlalchemy import select
         
-        context_blocks.append(f"--- Signal ID {signal_id} ---\n{doc_text}")
+        async with AsyncSessionLocal() as db:
+            result = await db.execute(select(FeedbackItem).limit(10))
+            recent_items = result.scalars().all()
+            
+            for item in recent_items:
+                context_blocks.append(f"--- Feedback Item {item.id} ---\n{item.cleaned_text or item.original_text}")
+                # We mock a source since we are pulling raw feedback instead of AI signals
+                sources.append(AISignalResponse(
+                    id=item.id,
+                    journey_stage="UNKNOWN",
+                    signal_type="RAW_FEEDBACK",
+                    confidence_score=1.0
+                ))
+    else:
+        retrieved_docs = results['documents'][0]
+        retrieved_metadatas = results['metadatas'][0]
+        retrieved_ids = results['ids'][0]
         
-        sources.append(AISignalResponse(
-            id=signal_id,
-            journey_stage=meta.get("journey_stage"),
-            signal_type=meta.get("signal_type"),
-            confidence_score=meta.get("confidence_score")
-        ))
+        for i in range(len(retrieved_docs)):
+            doc_text = retrieved_docs[i]
+            meta = retrieved_metadatas[i]
+            signal_id = retrieved_ids[i]
+            
+            context_blocks.append(f"--- Signal ID {signal_id} ---\n{doc_text}")
+            
+            sources.append(AISignalResponse(
+                id=signal_id,
+                journey_stage=meta.get("journey_stage"),
+                signal_type=meta.get("signal_type"),
+                confidence_score=meta.get("confidence_score")
+            ))
         
     full_context = "\n\n".join(context_blocks)
     
