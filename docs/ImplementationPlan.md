@@ -890,92 +890,72 @@ README.md (updated)
 
 ---
 
-## Phase 8 — Deployment (Railway + Vercel)
+## Phase 8 — Deployment (Render)
 
-> **Goal:** The full application is deployed to production — backend on Railway, frontend on Vercel — with environment variables configured, databases provisioned, and a working public URL.
+> **Goal:** The full application is deployed to production on Render — unified under a single Blueprint (`render.yaml`) — with environment variables configured, databases provisioned, and public URLs active.
 
-### 8.1 Backend Deployment — Railway
+### 8.1 Unified Deployment — Render Blueprint
 
 | Task | Deliverable |
 |---|---|
-| Create Railway project | Link to the `backend/` directory as a service |
-| Provision PostgreSQL | Railway managed PostgreSQL plugin (replaces local SQLite) |
-| Provision persistent volume | For ChromaDB vector store persistence |
-| Configure environment variables | `DATABASE_URL`, `GROQ_API_KEY`, `APP_ENV=production`, `CHROMADB_PATH` |
-| Create `Procfile` or `railway.toml` | Specify start command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT` |
-| Update `backend/app/config.py` | Support `DATABASE_URL` as PostgreSQL connection string (async via `asyncpg`) |
-| Update `requirements.txt` | Add `asyncpg`, `psycopg2-binary` for PostgreSQL support |
-| Run Alembic migrations on deploy | Add a release command or startup script: `alembic upgrade head` |
-| Configure CORS | Allow the Vercel frontend domain in CORS origins |
-| Verify health check | `https://<railway-app>.railway.app/health` returns 200 |
+| Create `render.yaml` | Define PostgreSQL, Backend Web Service (FastAPI), and Frontend Web Service (Next.js) |
+| Provision PostgreSQL | Render managed PostgreSQL instance |
+| Provision persistent volume | For ChromaDB vector store persistence (`/data`) |
+| Configure environment variables | `DATABASE_URL` (mapped from DB), `GROQ_API_KEY` (manual sync), `APP_ENV=production` |
+| Configure Frontend Env | Map backend's `RENDER_EXTERNAL_URL` to `NEXT_PUBLIC_API_URL` for frontend |
+| Build commands | Backend: pip install requirements. Frontend: `npm run build` |
+| Start commands | Backend: `alembic upgrade head && uvicorn app.main:app` |
+| Configure CORS | Allow the Render frontend domain in CORS origins |
 
 **Files:**
-- `backend/railway.toml` or `Procfile`
+- `render.yaml` (new)
 - `backend/app/config.py` (modified)
 - `backend/app/main.py` (CORS update)
 
-### 8.2 Frontend Deployment — Vercel
-
-| Task | Deliverable |
-|---|---|
-| Connect GitHub repo to Vercel | Auto-deploy on push to `main` |
-| Set root directory | `frontend/` |
-| Configure environment variables | `NEXT_PUBLIC_API_URL` pointing to Railway backend URL |
-| Update `next.config.ts` | Add `rewrites()` or update API proxy to point to the Railway backend in production |
-| Verify build | `npm run build` succeeds without errors on Vercel |
-| Configure custom domain (optional) | Map a custom domain in Vercel dashboard |
-
-**Files:**
-- `frontend/next.config.ts` (modified)
-- `frontend/.env.production` (new)
-
-### 8.3 Database Migration (SQLite → PostgreSQL)
+### 8.2 Database Migration (SQLite → PostgreSQL)
 
 | Task | Deliverable |
 |---|---|
 | Update SQLAlchemy engine config | Detect `DATABASE_URL` scheme — use `asyncpg` for PostgreSQL, `aiosqlite` for SQLite |
 | Remove `check_same_thread` for PostgreSQL | Only pass this connect arg when using SQLite |
-| Test migrations against PostgreSQL | `alembic upgrade head` runs cleanly on Railway's PostgreSQL |
+| Test migrations against PostgreSQL | `alembic upgrade head` runs cleanly on Render's PostgreSQL |
 | Seed production data | Run ingestion pipeline once post-deploy to populate the database |
 
-### 8.4 CI/CD Pipeline (Optional)
+### 8.3 CI/CD Pipeline (Render)
 
 | Task | Deliverable |
 |---|---|
-| GitHub Actions workflow | Run `pytest` on push, deploy to Railway on merge to `main` |
-| Vercel auto-deploy | Already configured via Vercel GitHub integration |
+| Render auto-deploy | Enable automatic deploys in Render dashboard for pushes to `main` |
 
-### 8.5 Verification
+### 8.4 Verification
 
 ```bash
 # ✅ Backend health check
-curl https://<railway-app>.railway.app/health
+curl https://<render-backend-app>.onrender.com/health
 # Returns: {"status": "ok"}
 
 # ✅ Frontend loads
-# Navigate to https://<vercel-app>.vercel.app
-# Dashboard renders with live data from Railway backend
+# Navigate to https://<render-frontend-app>.onrender.com
+# Dashboard renders with live data from Render backend
 
 # ✅ Research query works end-to-end
-curl -X POST https://<railway-app>.railway.app/api/v1/research/ask \
+curl -X POST https://<render-backend-app>.onrender.com/api/v1/research/ask \
   -H "Content-Type: application/json" \
   -d '{"query": "What sizing issues do users face?"}'
 # Returns AI-generated answer with sources
 
 # ✅ Pipeline can be triggered remotely
-curl -X POST https://<railway-app>.railway.app/api/v1/pipeline/run
+curl -X POST https://<render-backend-app>.onrender.com/api/v1/pipeline/run
 # Returns pipeline run status
 ```
 
 **Files Created/Modified:**
 ```
-backend/railway.toml
+render.yaml
 backend/app/config.py (modified)
 backend/app/db/session.py (modified)
 backend/app/main.py (CORS update)
 backend/requirements.txt (asyncpg added)
-frontend/next.config.ts (modified)
-frontend/.env.production
 ```
 
 ---
@@ -994,7 +974,7 @@ frontend/.env.production
 | **5. Backend API** | 20+ REST endpoints, research interface, segment/trend analysis | Phase 1, 4 |
 | **6. Frontend** | 8-section dashboard, 17+ components, 3 hooks, research flow | Phase 5 |
 | **7. Evaluation** | Golden dataset, quality tests, integrity checks, E2E tests, docs | Phase 4, 6 |
-| **8. Deployment** | Railway backend, Vercel frontend, PostgreSQL migration, CORS, CI/CD | Phase 7 |
+| **8. Deployment** | Render blueprint, PostgreSQL migration, CORS | Phase 7 |
 
 ### Total File Count
 

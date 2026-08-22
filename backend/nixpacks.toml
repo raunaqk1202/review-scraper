@@ -1,8 +1,0 @@
-[phases.install]
-cmds = [
-    "python -m venv --copies /opt/venv",
-    ". /opt/venv/bin/activate && pip install --upgrade pip",
-    "sed -i '/app-store-scraper/d' requirements.txt",
-    ". /opt/venv/bin/activate && pip install -r requirements.txt",
-    ". /opt/venv/bin/activate && pip install app-store-scraper==0.3.5 --no-deps"
-]
