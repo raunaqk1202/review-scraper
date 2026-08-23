@@ -3,6 +3,7 @@
 .env
 *.db
 *.sqlite
+!backend/data/chroma/*.sqlite3
 
 # Backend
 backend/.venv/
@@ -10,6 +11,7 @@ backend/__pycache__/
 backend/*.pyc
 backend/data/
 !backend/data/evaluation/
+!backend/data/chroma/
 
 # Frontend
 frontend/node_modules/
