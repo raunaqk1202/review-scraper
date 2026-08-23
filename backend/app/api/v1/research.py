@@ -16,7 +16,7 @@ router = APIRouter()
 
 groq_client = AsyncGroq(api_key=os.environ.get("GROQ_API_KEY"))
 client = instructor.from_groq(groq_client, mode=instructor.Mode.JSON)
-MODEL_NAME = "openai/gpt-oss-120b"
+MODEL_NAME = os.environ.get("GROQ_MODEL", "llama-3.1-70b-versatile")
 
 @router.post("/ask", response_model=ResearchQueryResponse)
 async def ask_research_question(
