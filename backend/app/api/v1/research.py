@@ -52,8 +52,8 @@ async def ask_research_question(
             result = await db.execute(select(FeedbackItem).limit(10))
             recent_items = result.scalars().all()
             
-            for item in recent_items:
-                context_blocks.append(f"--- Feedback Item {item.id} ---\n{item.cleaned_text or item.original_text}")
+            for i, item in enumerate(recent_items, 1):
+                context_blocks.append(f"--- User Feedback {i} ---\n{item.cleaned_text or item.original_text}")
                 # We mock a source since we are pulling raw feedback instead of AI signals
                 sources.append(AISignalResponse(
                     id=item.id,
@@ -71,7 +71,7 @@ async def ask_research_question(
             meta = retrieved_metadatas[i]
             signal_id = retrieved_ids[i]
             
-            context_blocks.append(f"--- Signal ID {signal_id} ---\n{doc_text}")
+            context_blocks.append(f"--- User Feedback {i+1} ---\n{doc_text}")
             
             sources.append(AISignalResponse(
                 id=signal_id,
@@ -86,7 +86,8 @@ async def ask_research_question(
     system_prompt = (
         "You are a UX/Consumer Psychology Researcher. Answer the user's question based ONLY "
         "on the retrieved user feedback signals provided below. Do not hallucinate external information. "
-        "Quote specific users where relevant. "
+        "When quoting or referencing user feedback, clearly distinguish it from your own analysis by using markdown blockquotes (e.g., prefix lines with >). "
+        "Never include internal IDs, UUIDs, or irrelevant metadata in your response. "
         "If the user's question is random, gibberish, or completely unrelated to UX, consumer psychology, or the retrieved signals, "
         "politely inform them that you didn't understand and ask them to try asking something relatable to the data."
     )

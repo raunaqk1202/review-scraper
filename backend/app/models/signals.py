@@ -9,7 +9,7 @@ class AISignal(Base):
     __tablename__ = "ai_signal"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    source_item_id = Column(String(36), ForeignKey("feedback_item.id"), nullable=False)
+    feedback_item_id = Column(String(36), ForeignKey("feedback_item.id"), nullable=False)
     
     journey_stage = Column(String(50))
     signal_type = Column(String(50))
