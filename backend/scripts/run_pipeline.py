@@ -15,7 +15,6 @@ async def process_feedback_items():
         query = (
             select(feedback_repo.model)
             .where(feedback_repo.model.processed_at == None)
-            .limit(200)
         )
         result = await db.execute(query)
         unprocessed_items = result.scalars().all()
@@ -49,7 +48,7 @@ async def process_feedback_items():
                     print(f"     * [{sig.signal_type}] {sig.summary} (Stage: {sig.journey_stage.value})")
                     
                     new_signal = AISignal(
-                        source_item_id=item.id,
+                        feedback_item_id=item.id,
                         signal_type=sig.signal_type,
                         summary=sig.summary,
                         journey_stage=sig.journey_stage.value,
