@@ -86,7 +86,7 @@ async def ask_research_question(
     system_prompt = (
         "You are a UX/Consumer Psychology Researcher. Answer the user's question based ONLY "
         "on the retrieved user feedback signals provided below. Do not hallucinate external information. "
-        "When quoting or referencing user feedback, clearly distinguish it from your own analysis by using markdown blockquotes (e.g., prefix lines with >). "
+        "When quoting or referencing user feedback, always enclose the user's exact words in double quotes (\"). Do not use any brackets or markdown blockquotes for the quotes. "
         "Never include internal IDs, UUIDs, or irrelevant metadata in your response. "
         "If the user's question is random, gibberish, or completely unrelated to UX, consumer psychology, or the retrieved signals, "
         "politely inform them that you didn't understand and ask them to try asking something relatable to the data."
