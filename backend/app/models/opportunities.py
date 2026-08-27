@@ -39,22 +39,33 @@ class Opportunity(Base):
     )
 
 class OpportunityScore(Base):
+    """
+    Scoring model using weighted multi-factor formula:
+    Score = 35% × User Pain + 30% × Business Impact + 20% × Reach + 15% × Evidence Strength
+
+    Each dimension is rated 1.0–5.0 by the LLM.
+    Composite score is 0–100: (7 × Pain) + (6 × Impact) + (4 × Reach) + (3 × Evidence)
+    Max = 7×5 + 6×5 + 4×5 + 3×5 = 100
+    """
     __tablename__ = "opportunity_score"
+
+    # Scoring weights: multipliers that produce a 0–100 composite
+    SCORING_WEIGHTS = {
+        "user_pain": 7,        # 35% weight (7/20)
+        "business_impact": 6,  # 30% weight (6/20)
+        "reach": 4,            # 20% weight (4/20)
+        "evidence_strength": 3 # 15% weight (3/20)
+    }
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     opportunity_id = Column(String(36), ForeignKey("opportunity.id"), nullable=False, unique=True)
     
-    reach = Column(Float)
-    frequency = Column(Float)
-    severity = Column(Float)
-    business_impact = Column(Float)
-    evidence_strength = Column(Float)
-    cross_source_consistency = Column(Float)
-    cross_segment_relevance = Column(Float)
-    trend_score = Column(Float)
-    strategic_relevance = Column(Float)
+    user_pain = Column(Float)           # 1.0–5.0: Severity of user frustration/barrier
+    business_impact = Column(Float)     # 1.0–5.0: Potential effect on conversion/revenue
+    reach = Column(Float)               # 1.0–5.0: How widespread the problem is
+    evidence_strength = Column(Float)   # 1.0–5.0: Confidence in the finding
     
-    composite_score = Column(Float)
+    composite_score = Column(Float)     # 0–100: Weighted composite
     dimension_weights = Column(SQLiteJSON)
     scored_at = Column(DateTime, default=datetime.utcnow)
 
@@ -63,6 +74,18 @@ class OpportunityScore(Base):
     __table_args__ = (
         Index("idx_opp_score_composite", "composite_score"),
     )
+
+    @classmethod
+    def compute_composite_score(cls, user_pain: float, business_impact: float,
+                                 reach: float, evidence_strength: float) -> float:
+        """Compute the 0–100 composite score from four 1.0–5.0 dimension ratings."""
+        w = cls.SCORING_WEIGHTS
+        return (
+            w["user_pain"] * user_pain +
+            w["business_impact"] * business_impact +
+            w["reach"] * reach +
+            w["evidence_strength"] * evidence_strength
+        )
 
 class OpportunityEvidence(Base):
     __tablename__ = "opportunity_evidence"

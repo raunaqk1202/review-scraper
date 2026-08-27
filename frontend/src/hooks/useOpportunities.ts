@@ -3,9 +3,9 @@
 import { useState, useEffect } from "react";
 
 export interface OpportunityScore {
-  reach: number;
-  severity: number;
+  user_pain: number;
   business_impact: number;
+  reach: number;
   evidence_strength: number;
   composite_score: number;
 }
@@ -14,6 +14,8 @@ export interface Opportunity {
   id: string;
   title: string;
   description?: string;
+  barrier?: string;
+  unmet_need?: string;
   supporting_conversations: number;
   score?: OpportunityScore;
 }

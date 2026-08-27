@@ -23,9 +23,23 @@ export default function Home() {
           Opportunities
         </h3>
       </div>
-      <div className="flex flex-col gap-1 mb-md text-body-sm text-on-surface-variant">
-        <p>The percentage represents the proportion of reviews corresponding to each opportunity relative to the total number of classified reviews.</p>
+
+      {/* Scoring formula explanation */}
+      <div className="glass-card rounded-lg p-4 mb-md border border-white/10">
+        <div className="flex items-start gap-3">
+          <span className="text-primary text-lg mt-0.5">ƒ</span>
+          <div>
+            <p className="text-body-sm font-semibold text-on-surface mb-1">
+              Score = 35% × User Pain + 30% × Business Impact + 20% × Reach + 15% × Evidence Strength
+            </p>
+            <p className="text-body-sm text-on-surface-variant leading-relaxed">
+              Each dimension is rated 1.0–5.0 by the AI, producing a 0–100 composite score.
+              Opportunities are ranked by composite score to surface the most impactful product opportunities first.
+            </p>
+          </div>
+        </div>
       </div>
+
       <OpportunityGrid />
     </main>
   );

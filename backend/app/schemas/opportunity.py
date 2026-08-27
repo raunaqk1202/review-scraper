@@ -2,11 +2,11 @@ from pydantic import BaseModel, ConfigDict
 from typing import List, Optional
 
 class OpportunityScoreResponse(BaseModel):
-    reach: float
-    severity: float
-    business_impact: float
-    evidence_strength: float
-    composite_score: float
+    user_pain: Optional[float] = None
+    business_impact: Optional[float] = None
+    reach: Optional[float] = None
+    evidence_strength: Optional[float] = None
+    composite_score: Optional[float] = None
     
     model_config = ConfigDict(from_attributes=True)
 
@@ -14,6 +14,8 @@ class OpportunityResponse(BaseModel):
     id: str
     title: str
     description: Optional[str] = None
+    barrier: Optional[str] = None
+    unmet_need: Optional[str] = None
     supporting_conversations: int
     score: Optional[OpportunityScoreResponse] = None
     

@@ -15,27 +15,28 @@ class OpportunityService:
         return result.scalars().first()
         
     async def update_score_weights(self, db: AsyncSession, weights: Dict[str, float]) -> bool:
-        # For MVP we will just update all scores in the DB to reflect new weights
-        # In a real app we'd trigger a background job to recalculate
+        """Recalculate composite scores using custom dimension weights.
+        
+        Weights dict example: {"user_pain": 7, "business_impact": 6, "reach": 4, "evidence_strength": 3}
+        """
         query = select(OpportunityScore)
         result = await db.execute(query)
         scores = result.scalars().all()
         
         for score in scores:
             score.dimension_weights = weights
-            # Recalculate composite based on weights (default to 1.0 for each if not specified)
-            w_reach = weights.get("reach", 1.0)
-            w_sev = weights.get("severity", 1.0)
-            w_bus = weights.get("business_impact", 1.0)
             
-            # Simple weighted average
-            total_weight = w_reach + w_sev + w_bus
-            if total_weight > 0:
-                score.composite_score = (
-                    (score.reach * w_reach) + 
-                    (score.severity * w_sev) + 
-                    (score.business_impact * w_bus)
-                ) / total_weight
+            w_pain = weights.get("user_pain", 7)
+            w_impact = weights.get("business_impact", 6)
+            w_reach = weights.get("reach", 4)
+            w_evidence = weights.get("evidence_strength", 3)
+            
+            score.composite_score = (
+                w_pain * (score.user_pain or 3.0) +
+                w_impact * (score.business_impact or 3.0) +
+                w_reach * (score.reach or 2.0) +
+                w_evidence * (score.evidence_strength or 2.0)
+            )
                 
         await db.commit()
         return True

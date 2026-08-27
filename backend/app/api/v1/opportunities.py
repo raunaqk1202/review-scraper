@@ -30,12 +30,23 @@ async def list_opportunities(db: AsyncSession = Depends(get_db)):
 
 @router.get("/{id}", response_model=Dict[str, Any])
 async def get_opportunity(id: str, db: AsyncSession = Depends(get_db)):
-    """Full opportunity detail."""
+    """Full opportunity detail with score breakdown."""
     opp = await opportunity_service.get_opportunity(db, id)
     if not opp:
         raise HTTPException(status_code=404, detail="Opportunity not found")
     
-    # Simple dict serialization for MVP
+    score_data = None
+    if opp.score:
+        score_data = {
+            "user_pain": opp.score.user_pain,
+            "business_impact": opp.score.business_impact,
+            "reach": opp.score.reach,
+            "evidence_strength": opp.score.evidence_strength,
+            "composite_score": opp.score.composite_score,
+            "formula": "Score = 35% × User Pain + 30% × Business Impact + 20% × Reach + 15% × Evidence Strength",
+            "dimension_weights": opp.score.dimension_weights,
+        }
+    
     return {
         "id": opp.id,
         "title": opp.title,
@@ -43,7 +54,8 @@ async def get_opportunity(id: str, db: AsyncSession = Depends(get_db)):
         "user_segment": opp.user_segment,
         "barrier": opp.barrier,
         "unmet_need": opp.unmet_need,
-        "score": opp.score.composite_score if opp.score else None
+        "supporting_conversations": opp.supporting_conversations,
+        "score": score_data,
     }
 
 @router.get("/{id}/evidence", response_model=List[Dict[str, Any]])
