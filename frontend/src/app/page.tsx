@@ -25,18 +25,16 @@ export default function Home() {
       </div>
 
       {/* Scoring formula explanation */}
-      <div className="glass-card rounded-lg p-4 mb-md border border-white/10">
-        <div className="flex items-start gap-3">
-          <span className="text-primary text-lg mt-0.5">ƒ</span>
-          <div>
-            <p className="text-body-sm font-semibold text-on-surface mb-1">
-              Score = 35% × User Pain + 30% × Business Impact + 20% × Reach + 15% × Evidence Strength
-            </p>
-            <p className="text-body-sm text-on-surface-variant leading-relaxed">
-              Each dimension is rated 1.0–5.0 by the AI, producing a 0–100 composite score.
-              Opportunities are ranked by composite score to surface the most impactful product opportunities first.
-            </p>
-          </div>
+      <div className="mb-md mt-2 flex items-start gap-3 text-on-surface-variant">
+        <span className="text-primary text-lg mt-0.5">ƒ</span>
+        <div>
+          <p className="text-body-sm font-semibold mb-1">
+            Score = 35% × User Pain + 30% × Business Impact + 20% × Reach + 15% × Evidence Strength
+          </p>
+          <p className="text-body-sm leading-relaxed max-w-4xl">
+            Each dimension is rated 1.0–5.0 by the AI, producing a 0–100 composite score.
+            Opportunities are ranked by composite score to surface the most impactful product opportunities first.
+          </p>
         </div>
       </div>
 
