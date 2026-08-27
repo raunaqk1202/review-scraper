@@ -69,3 +69,63 @@ async def update_score_weights(weights: Dict[str, float], db: AsyncSession = Dep
     """Update scoring weights -> re-calculate composite scores."""
     await opportunity_service.update_score_weights(db, weights)
     return {"status": "success", "message": "Weights updated"}
+
+@router.post("/rescore_all", response_model=Dict[str, Any])
+async def rescore_all_opportunities(db: AsyncSession = Depends(get_db)):
+    """Re-score all existing opportunities using the LLM (useful for production migrations)."""
+    from app.pipeline.stage_5_opportunities import score_opportunity_with_llm
+    from app.models.opportunities import OpportunityScore
+    import uuid
+    
+    query = select(Opportunity).options(selectinload(Opportunity.score))
+    result = await db.execute(query)
+    opportunities = result.scalars().all()
+    
+    scored_count = 0
+    errors = []
+    
+    for opp in opportunities:
+        try:
+            llm_scores = await score_opportunity_with_llm(opp)
+            
+            composite = OpportunityScore.compute_composite_score(
+                user_pain=llm_scores.user_pain,
+                business_impact=llm_scores.business_impact,
+                reach=llm_scores.reach,
+                evidence_strength=llm_scores.evidence_strength
+            )
+            
+            if opp.score:
+                # Update existing score
+                opp.score.user_pain = llm_scores.user_pain
+                opp.score.business_impact = llm_scores.business_impact
+                opp.score.reach = llm_scores.reach
+                opp.score.evidence_strength = llm_scores.evidence_strength
+                opp.score.composite_score = composite
+                opp.score.dimension_weights = OpportunityScore.SCORING_WEIGHTS
+            else:
+                # Create new score
+                new_score = OpportunityScore(
+                    id=str(uuid.uuid4()),
+                    opportunity_id=opp.id,
+                    user_pain=llm_scores.user_pain,
+                    business_impact=llm_scores.business_impact,
+                    reach=llm_scores.reach,
+                    evidence_strength=llm_scores.evidence_strength,
+                    composite_score=composite,
+                    dimension_weights=OpportunityScore.SCORING_WEIGHTS,
+                )
+                db.add(new_score)
+            
+            scored_count += 1
+        except Exception as e:
+            errors.append(f"Failed to score {opp.title}: {str(e)}")
+            
+    await db.commit()
+    
+    return {
+        "status": "success",
+        "scored_count": scored_count,
+        "errors": errors
+    }
+
