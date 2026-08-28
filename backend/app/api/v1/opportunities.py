@@ -129,3 +129,71 @@ async def rescore_all_opportunities(db: AsyncSession = Depends(get_db)):
         "errors": errors
     }
 
+
+@router.patch("/sync_scores", response_model=Dict[str, Any])
+async def sync_scores(scores: List[Dict[str, Any]], db: AsyncSession = Depends(get_db)):
+    """Directly set opportunity scores from provided values (no LLM call).
+    
+    Each item should have: title, user_pain, business_impact, reach, evidence_strength.
+    Composite score is recalculated using the standard formula.
+    """
+    import uuid
+    
+    query = select(Opportunity).options(selectinload(Opportunity.score))
+    result = await db.execute(query)
+    opportunities = result.scalars().all()
+    
+    # Build lookup by title
+    opp_map = {opp.title: opp for opp in opportunities}
+    
+    updated = 0
+    errors = []
+    
+    for item in scores:
+        title = item.get("title")
+        if not title or title not in opp_map:
+            errors.append(f"Opportunity not found: {title}")
+            continue
+        
+        opp = opp_map[title]
+        user_pain = float(item["user_pain"])
+        business_impact = float(item["business_impact"])
+        reach = float(item["reach"])
+        evidence_strength = float(item["evidence_strength"])
+        
+        composite = OpportunityScore.compute_composite_score(
+            user_pain=user_pain,
+            business_impact=business_impact,
+            reach=reach,
+            evidence_strength=evidence_strength
+        )
+        
+        if opp.score:
+            opp.score.user_pain = user_pain
+            opp.score.business_impact = business_impact
+            opp.score.reach = reach
+            opp.score.evidence_strength = evidence_strength
+            opp.score.composite_score = composite
+            opp.score.dimension_weights = OpportunityScore.SCORING_WEIGHTS
+        else:
+            new_score = OpportunityScore(
+                id=str(uuid.uuid4()),
+                opportunity_id=opp.id,
+                user_pain=user_pain,
+                business_impact=business_impact,
+                reach=reach,
+                evidence_strength=evidence_strength,
+                composite_score=composite,
+                dimension_weights=OpportunityScore.SCORING_WEIGHTS,
+            )
+            db.add(new_score)
+        
+        updated += 1
+    
+    await db.commit()
+    
+    return {
+        "status": "success",
+        "updated_count": updated,
+        "errors": errors
+    }
