@@ -50,7 +50,7 @@ export default function OpportunityGrid() {
     <div className="flex flex-col gap-4 pb-xl">
       {sortedOpportunities.map((opp, index) => {
         const composite = opp.score?.composite_score ?? 0;
-        const scorePercent = Math.round(composite);
+        const scorePercent = composite.toFixed(1);
 
         return (
           <div key={opp.id} className="glass-card rounded-lg p-0 overflow-hidden flex flex-col text-on-surface">
