@@ -130,8 +130,17 @@ async def rescore_all_opportunities(db: AsyncSession = Depends(get_db)):
     }
 
 
+from pydantic import BaseModel
+
+class ScoreSyncItem(BaseModel):
+    title: str
+    user_pain: float
+    business_impact: float
+    reach: float
+    evidence_strength: float
+
 @router.patch("/sync_scores", response_model=Dict[str, Any])
-async def sync_scores(scores: List[Dict[str, Any]], db: AsyncSession = Depends(get_db)):
+async def sync_scores(scores: List[ScoreSyncItem], db: AsyncSession = Depends(get_db)):
     """Directly set opportunity scores from provided values (no LLM call).
     
     Each item should have: title, user_pain, business_impact, reach, evidence_strength.
@@ -139,61 +148,64 @@ async def sync_scores(scores: List[Dict[str, Any]], db: AsyncSession = Depends(g
     """
     import uuid
     
-    query = select(Opportunity).options(selectinload(Opportunity.score))
-    result = await db.execute(query)
-    opportunities = result.scalars().all()
-    
-    # Build lookup by title
-    opp_map = {opp.title: opp for opp in opportunities}
-    
-    updated = 0
-    errors = []
-    
-    for item in scores:
-        title = item.get("title")
-        if not title or title not in opp_map:
-            errors.append(f"Opportunity not found: {title}")
-            continue
+    try:
+        query = select(Opportunity).options(selectinload(Opportunity.score))
+        result = await db.execute(query)
+        opportunities = result.scalars().all()
         
-        opp = opp_map[title]
-        user_pain = float(item["user_pain"])
-        business_impact = float(item["business_impact"])
-        reach = float(item["reach"])
-        evidence_strength = float(item["evidence_strength"])
+        # Build lookup by title
+        opp_map = {opp.title: opp for opp in opportunities}
         
-        composite = OpportunityScore.compute_composite_score(
-            user_pain=user_pain,
-            business_impact=business_impact,
-            reach=reach,
-            evidence_strength=evidence_strength
-        )
+        updated = 0
+        errors = []
         
-        if opp.score:
-            opp.score.user_pain = user_pain
-            opp.score.business_impact = business_impact
-            opp.score.reach = reach
-            opp.score.evidence_strength = evidence_strength
-            opp.score.composite_score = composite
-            opp.score.dimension_weights = OpportunityScore.SCORING_WEIGHTS
-        else:
-            new_score = OpportunityScore(
-                id=str(uuid.uuid4()),
-                opportunity_id=opp.id,
-                user_pain=user_pain,
-                business_impact=business_impact,
-                reach=reach,
-                evidence_strength=evidence_strength,
-                composite_score=composite,
-                dimension_weights=OpportunityScore.SCORING_WEIGHTS,
+        for item in scores:
+            title = item.title
+            if title not in opp_map:
+                errors.append(f"Opportunity not found: {title}")
+                continue
+            
+            opp = opp_map[title]
+            
+            composite = OpportunityScore.compute_composite_score(
+                user_pain=item.user_pain,
+                business_impact=item.business_impact,
+                reach=item.reach,
+                evidence_strength=item.evidence_strength
             )
-            db.add(new_score)
+            
+            if opp.score:
+                opp.score.user_pain = item.user_pain
+                opp.score.business_impact = item.business_impact
+                opp.score.reach = item.reach
+                opp.score.evidence_strength = item.evidence_strength
+                opp.score.composite_score = composite
+                opp.score.dimension_weights = OpportunityScore.SCORING_WEIGHTS
+            else:
+                new_score = OpportunityScore(
+                    id=str(uuid.uuid4()),
+                    opportunity_id=opp.id,
+                    user_pain=item.user_pain,
+                    business_impact=item.business_impact,
+                    reach=item.reach,
+                    evidence_strength=item.evidence_strength,
+                    composite_score=composite,
+                    dimension_weights=OpportunityScore.SCORING_WEIGHTS,
+                )
+                db.add(new_score)
+            
+            updated += 1
         
-        updated += 1
-    
-    await db.commit()
-    
-    return {
-        "status": "success",
-        "updated_count": updated,
-        "errors": errors
-    }
+        await db.commit()
+        
+        return {
+            "status": "success",
+            "updated_count": updated,
+            "errors": errors
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "updated_count": 0,
+            "errors": [str(e)]
+        }
