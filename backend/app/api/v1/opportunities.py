@@ -6,7 +6,7 @@ from sqlalchemy.orm import selectinload
 from typing import List, Dict, Any
 
 from app.api.deps import get_db
-from app.models.opportunities import Opportunity
+from app.models.opportunities import Opportunity, OpportunityScore
 from app.schemas.opportunity import OpportunityResponse
 from app.services.opportunity_service import opportunity_service
 from app.services.evidence_service import evidence_service
